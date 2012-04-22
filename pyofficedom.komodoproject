@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Komodo Project File - DO NOT EDIT -->
+<project id="31d5db9c-f8a8-4ec6-86cf-81ed67c30f71" kpf_version="5" name="pyofficedom.komodoproject">
+<folder id="cf4056fc-9941-4bd7-b3c2-11f2adebb1a5" idref="14cff36f-5c1e-4cc4-aeba-4553650f9ed6" name="officedom">
+</folder>
+<folder id="14cff36f-5c1e-4cc4-aeba-4553650f9ed6" idref="31d5db9c-f8a8-4ec6-86cf-81ed67c30f71" name="src">
+</folder>
+<file id="22db4812-ab61-4218-964d-5490af7ee827" idref="31d5db9c-f8a8-4ec6-86cf-81ed67c30f71" name="COPYING.LESSER" url="COPYING.LESSER">
+</file>
+<file id="b740e9f8-d876-4b7b-b4c0-e9caef9230fa" idref="31d5db9c-f8a8-4ec6-86cf-81ed67c30f71" name="COPYING" url="COPYING">
+</file>
+<folder id="f51b9811-d0bc-4d93-83d3-6290fcea36fe" idref="31d5db9c-f8a8-4ec6-86cf-81ed67c30f71" name="test">
+</folder>
+<file id="5abd0569-473b-4cab-add6-5a1084bcaf22" idref="b9022aa6-5e77-48e3-a5bd-9ccc748151cf" name="test.doc" url="test/data/test.doc">
+</file>
+<file id="0bbae9f9-bd56-4b2f-9c9f-01b4034cef99" idref="cf4056fc-9941-4bd7-b3c2-11f2adebb1a5" name="__init__.py" url="src/officedom/__init__.py">
+</file>
+<file id="e76cc1e9-7a7a-456e-a29d-7b39f64fbfdf" idref="cf4056fc-9941-4bd7-b3c2-11f2adebb1a5" name="word.py" url="src/officedom/word.py">
+</file>
+<folder id="b9022aa6-5e77-48e3-a5bd-9ccc748151cf" idref="f51b9811-d0bc-4d93-83d3-6290fcea36fe" name="data">
+</folder>
+<file id="fe95aef8-c0a4-44b6-9a35-4a9c1b54c904" idref="f51b9811-d0bc-4d93-83d3-6290fcea36fe" name="test_word.py" url="test/test_word.py">
+</file>
+<preference-set idref="31d5db9c-f8a8-4ec6-86cf-81ed67c30f71">
+  <string id="currentInvocationLanguage">Python</string>
+  <string relative="path" id="import_dirname"></string>
+  <string id="import_exclude_matches">*.*~;*.bak;*.tmp;CVS;.#*;*.pyo;*.pyc;.svn;_svn;.git;.hg;.bzr;*%*;tmp*.html;.DS_Store;*.swp;*.kpf;*.komodoproject;.komodotools</string>
+  <string id="import_include_matches"></string>
+  <string id="language">Python</string>
+  <string id="lastInvocation"></string>
+  <string id="lastTestPlanName_pref">pyofficedom - word</string>
+  <string id="mappedPaths"></string>
+  <string relative="path" id="pythonExtraPaths">src</string>
+<preference-set id="testPlans">
+<preference-set id="pyofficedom - word">
+  <string id="command_line"></string>
+  <string relative="url" id="directory">test/</string>
+  <string id="language">Python - unittest</string>
+</preference-set>
+</preference-set>
+</preference-set>
+</project>
