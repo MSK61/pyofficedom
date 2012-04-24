@@ -17,6 +17,8 @@
 </file>
 <file id="e76cc1e9-7a7a-456e-a29d-7b39f64fbfdf" idref="cf4056fc-9941-4bd7-b3c2-11f2adebb1a5" name="word.py" url="src/officedom/word.py">
 </file>
+<file id="216271c3-58dd-4cae-bab8-0466093cce6c" idref="f51b9811-d0bc-4d93-83d3-6290fcea36fe" name="Fixture.py" url="test/Fixture.py">
+</file>
 <folder id="b9022aa6-5e77-48e3-a5bd-9ccc748151cf" idref="f51b9811-d0bc-4d93-83d3-6290fcea36fe" name="data">
 </folder>
 <file id="fe95aef8-c0a4-44b6-9a35-4a9c1b54c904" idref="f51b9811-d0bc-4d93-83d3-6290fcea36fe" name="test_word.py" url="test/test_word.py">
@@ -34,7 +36,7 @@
 <preference-set id="testPlans">
 <preference-set id="pyofficedom - word">
   <string id="command_line"></string>
-  <string relative="url" id="directory">test/</string>
+  <string relative="url" id="directory">test</string>
   <string id="language">Python - unittest</string>
 </preference-set>
 </preference-set>

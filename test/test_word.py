@@ -38,6 +38,7 @@
 #
 ############################################################
 
+import Fixture
 import mock
 from officedom.word import Application, NO_OBJ
 import os
@@ -70,32 +71,27 @@ class AppContextTest(TestCase):
         app.quit.assert_called_once_with()
 
 
-class DocTest(TestCase):
+class DocChangeTest(TestCase):
 
-    """Test case for document properties and operations"""
+    """Test case for changing document content and properties"""
 
-    # input directory
-    _DATA_DIR_NAME = "data"
-
-    _data_dir = abspath(_DATA_DIR_NAME)
-
-    # result directory
-    _OUT_DIR_NAME = "res"
-
-    _out_dir = abspath(_OUT_DIR_NAME)
-
-    def setUp(self):
-        """Create the working directory for the test.
+    def __init__(self, test_func):
+        """Create a document change test.
 
         `self` is this test case.
-        The old working directory(if any) is removed first.
+        `test_func` is the test function to run.
 
         """
-        # Clean stale test results(if any).
-        if os.path.exists(self._out_dir):
-            rmtree(self._out_dir)
+        TestCase.__init__(self, test_func)
+        self._fixture = _WorkDirFixture()
 
-        os.mkdir(self._out_dir)
+    def setUp(self):
+        """Prepare for the test.
+
+        `self` is this test case.
+
+        """
+        self._fixture.setUp()
 
     def tearDown(self):
         """Delete the test working directory.
@@ -103,7 +99,62 @@ class DocTest(TestCase):
         `self` is this test case.
 
         """
-        rmtree(self._out_dir)
+        self._fixture.tearDown()
+
+    def test_theme(self):
+        """Test changing themes.
+
+        `self` is this test case.
+        Load a document, change its active theme, and then save the
+        document again.
+        Close the document.
+        Open the document again and verify the theme was changed.
+
+        """
+        test_doc = "test.doc"
+        out_file = join(self._fixture.out_dir, test_doc)
+        with Application() as app:
+
+            doc = app.documents.open(join(self._fixture.data_dir, test_doc))
+            doc_data = doc.data
+            self.assertNotEqual(doc_data.active_theme, NO_OBJ)
+            # Modify and save the document.
+            doc_data.active_theme = NO_OBJ
+            doc.save_as(out_file)
+            doc.close()
+            # Reopen and validate the document.
+            self.assertEqual(app.documents.open(out_file).data, doc_data)
+
+
+class DocTest(TestCase):
+
+    """Test case for document properties and operations"""
+
+    def __init__(self, test_func):
+        """Create a document test.
+
+        `self` is this test case.
+        `test_func` is the test function to run.
+
+        """
+        TestCase.__init__(self, test_func)
+        self._fixture = _WorkDirFixture()
+
+    def setUp(self):
+        """Prepare for the test.
+
+        `self` is this test case.
+
+        """
+        self._fixture.setUp()
+
+    def tearDown(self):
+        """Delete the test working directory.
+
+        `self` is this test case.
+
+        """
+        self._fixture.tearDown()
 
     def test_acyclic(self):
         """Verify no cycles exist in the document tree.
@@ -119,34 +170,10 @@ class DocTest(TestCase):
         objref_path = ".//*[@objref]"
         with Application() as app:
 
-            doc_data = app.documents.open(join(self._data_dir, test_doc)).data
+            doc_data = app.documents.open(
+                join(self._fixture.data_dir, test_doc)).data
             self.assertIsNone(xml.etree.ElementTree.fromstring(
                 pyxser.serialize(doc_data, encoding)).find(objref_path))
-
-    def test_change_doc(self):
-        """Test document consistency across loading and saving.
-
-        `self` is this test case.
-        Load a document, change some properties, and then save the
-        changes.
-        Close the document.
-        Open the document again and verify the changed properties were
-        saved.
-
-        """
-        test_doc = "test.doc"
-        out_file = join(self._out_dir, test_doc)
-        with Application() as app:
-
-            doc = app.documents.open(join(self._data_dir, test_doc))
-            self.assertNotEqual(doc.data.active_theme, NO_OBJ)
-            # Modify and save the document.
-            doc.data.active_theme = NO_OBJ
-            doc.save_as(out_file)
-            doc.close()
-            # Reopen and validate the document.
-            self.assertEqual(
-                app.documents.open(out_file).data.active_theme, NO_OBJ)
 
     def test_doc_seq(self):
         """Test sequence operations on documents.
@@ -156,19 +183,21 @@ class DocTest(TestCase):
 
         """
         test_doc = "test.doc"
-        in_file = join(self._data_dir, test_doc)
+        in_file = join(self._fixture.data_dir, test_doc)
         with Application() as app:
 
             doc = app.documents.open(in_file)
-            self.assertTrue(doc in app.documents)
+            self.assertIn(doc, app.documents)
             self.assertEqual(app.documents[0], doc)
             self.assertEqual(app.documents[-1], doc)
             self.assertEqual(app.documents[0:1][0], doc)
             self.assertEqual(app.documents[0:][0], doc)
             self.assertEqual(app.documents[:1][0], doc)
             self.assertEqual(app.documents[:][0], doc)
-            shutil.copy(in_file, self._out_dir)
-            app.documents.open(join(self._out_dir, test_doc))
+            self.assertEqual(app.documents.count(doc), 1)
+            self.assertEqual(app.documents.index(doc), 0)
+            shutil.copy(in_file, self._fixture.out_dir)
+            app.documents.open(join(self._fixture.out_dir, test_doc))
             self.assertEqual(app.documents[::2][0], doc)
             reversed_docs = list(reversed(app.documents))
             self.assertSequenceEqual(
@@ -186,13 +215,48 @@ class DocTest(TestCase):
 
         """
         test_doc = "test.doc"
-        in_file = join(self._data_dir, test_doc)
+        in_file = join(self._fixture.data_dir, test_doc)
         with Application() as app:
 
             app.documents.open(in_file)
             self.assertEqual(len(app.documents), 1)
             app.documents.open(in_file)
             self.assertEqual(len(app.documents), 1)
+
+
+class _WorkDirFixture(Fixture.Fixture):
+
+    """Fixture for creating and cleaning up working directories"""
+
+    # input directory
+    _DATA_DIR_NAME = "data"
+
+    data_dir = abspath(_DATA_DIR_NAME)
+
+    # result directory
+    _OUT_DIR_NAME = "res"
+
+    out_dir = abspath(_OUT_DIR_NAME)
+
+    def setUp(self):
+        """Create the working directory for the test.
+
+        `self` is this fixture.
+        The old working directory(if any) is removed first.
+
+        """
+        if os.path.exists(self.out_dir):  # Clean stale test results(if any).
+            rmtree(self.out_dir)
+
+        os.mkdir(self.out_dir)
+
+    def tearDown(self):
+        """Delete the test working directory.
+
+        `self` is this fixture.
+
+        """
+        rmtree(self.out_dir)
 
 def main():
     """entry point for running test in this module"""

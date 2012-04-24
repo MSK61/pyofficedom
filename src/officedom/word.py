@@ -179,8 +179,8 @@ class _Documents:
         `name` is the attribute.
 
         """
-        if name in ["__len__", "__getitem__", "__iter__", "__reversed__",
-                    "__contains__"]:
+        if name in ["count", "index", "__len__", "__getitem__", "__iter__",
+                    "__reversed__", "__contains__"]:
             return getattr(self._docs, name)
 
         raise AttributeError()
@@ -224,6 +224,24 @@ class _LightDocument(object):
 
         """
         self.active_theme = doc.ActiveTheme
+
+    def __eq__(self, other):
+        """Test if the two documents have the same content.
+
+        `self` is this word document.
+        `other` is the other word document.
+
+        """
+        return self.active_theme == other.active_theme
+
+    def __ne__(self, other):
+        """Test if the two documents have different content.
+
+        `self` is this word document.
+        `other` is the other word document.
+
+        """
+        return self.active_theme != other.active_theme
 
     def sync(self, doc):
         """Update the underlying COM object.
