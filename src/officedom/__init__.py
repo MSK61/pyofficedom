@@ -39,22 +39,40 @@
 ############################################################
 
 import itertools
+import sys
+
 import win32com.client.gencache
 import win32com.client.selecttlb
 
+import word
+
 def _init():
-    """Initialize application type libraries."""
-    app_names = ["Word"]
+    """Initialize office-wide and application type libraries."""
+    tlb_modules = {"Office": sys.modules[__name__], "Word": word}
+    # Get the type libraries for each supported office application.
+    app_entries = tlb_modules.iteritems()
+    tlbs = win32com.client.selecttlb.EnumTlbs()
+    num_of_tlbs = len(tlbs)
+    tlb_suffix = "Object Library"
 
-    # Get the type libraries for supported office applications.
-    tlb_prefixes = map(lambda name: "Microsoft " + name, app_names)
-    app_tlbs = itertools.ifilter(
-        lambda tlb: any(itertools.imap(tlb.desc.startswith, tlb_prefixes)),
-        win32com.client.selecttlb.EnumTlbs())
+    for cur_app, cur_mod in app_entries:
 
-    # Generate modules for supported office applications(if necessary).
-    for cur_tlb in app_tlbs:
-        win32com.client.gencache.EnsureModule(cur_tlb.clsid, cur_tlb.lcid, int(
-            cur_tlb.major), int(cur_tlb.minor))
+        cur_tlb = 0
+        tlb_prefix = "Microsoft " + cur_app
+        tlb_found = False
+
+        # Generate a module for the current supported office
+        # application.
+        while not tlb_found and cur_tlb < num_of_tlbs:
+
+            if tlbs[cur_tlb].desc.startswith(tlb_prefix) and \
+                tlbs[cur_tlb].desc.endswith(tlb_suffix):
+
+                cur_mod.constants = win32com.client.gencache.EnsureModule(
+                    tlbs[cur_tlb].clsid, tlbs[cur_tlb].lcid, int(tlbs[
+                    cur_tlb].major), int(tlbs[cur_tlb].minor)).constants
+                tlb_found = True
+
+            cur_tlb += 1
 
 _init()

@@ -13,6 +13,8 @@
 </folder>
 <file id="5abd0569-473b-4cab-add6-5a1084bcaf22" idref="b9022aa6-5e77-48e3-a5bd-9ccc748151cf" name="test.doc" url="test/data/test.doc">
 </file>
+<file id="89359238-6b49-458f-8e4b-820a096fb48f" idref="b9022aa6-5e77-48e3-a5bd-9ccc748151cf" name="a.doc" url="test/data/a.doc">
+</file>
 <file id="0bbae9f9-bd56-4b2f-9c9f-01b4034cef99" idref="cf4056fc-9941-4bd7-b3c2-11f2adebb1a5" name="__init__.py" url="src/officedom/__init__.py">
 </file>
 <file id="e76cc1e9-7a7a-456e-a29d-7b39f64fbfdf" idref="cf4056fc-9941-4bd7-b3c2-11f2adebb1a5" name="word.py" url="src/officedom/word.py">

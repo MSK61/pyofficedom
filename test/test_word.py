@@ -38,17 +38,18 @@
 #
 ############################################################
 
-import Fixture
-import mock
-from officedom.word import Application, NO_OBJ
 import os
 from os.path import abspath, join
-import pyxser
-import shutil
 from shutil import rmtree
 import unittest
 from unittest import TestCase
 import xml.etree.ElementTree
+
+from mock import MagicMock
+import pyxser
+
+import Fixture
+from officedom.word import Application, NO_OBJ
 
 class AppContextTest(TestCase):
 
@@ -60,12 +61,11 @@ class AppContextTest(TestCase):
         `self` is this test case.
         Use an application object as the context manager of with
         statement.
-        Verify the application is quitted appropriately upon context
-        exit.
+        Verify the application is quitted  upon context exit.
 
         """
         app = Application()
-        app.quit = mock.MagicMock(wraps=app.quit)
+        app.quit = MagicMock(wraps=app.quit)
         with app:
             pass
         app.quit.assert_called_once_with()
@@ -175,33 +175,56 @@ class DocTest(TestCase):
             self.assertIsNone(xml.etree.ElementTree.fromstring(
                 pyxser.serialize(doc_data, encoding)).find(objref_path))
 
+    def test_context(self):
+        """Test context manager features of documents.
+
+        `self` is this test case.
+        Use an document as the context manager of with statement.
+        Verify the document is closed appropriately upon context
+        exit.
+
+        """
+        test_doc = "test.doc"
+        with Application() as app:
+
+            doc = app.documents.open(join(self._fixture.data_dir, test_doc))
+            doc.close = MagicMock(wraps=doc.close)
+            with doc:
+                pass
+            doc.close.assert_called_once_with()
+
     def test_doc_seq(self):
         """Test sequence operations on documents.
 
         `self` is this test case.
-        Verify indexing, slicing, and iteration over documents work.
+        Verify typical immutable sequence operations work for documents.
 
         """
         test_doc = "test.doc"
-        in_file = join(self._fixture.data_dir, test_doc)
+        test_doc2 = "a.doc"
         with Application() as app:
 
-            doc = app.documents.open(in_file)
-            self.assertIn(doc, app.documents)
-            self.assertEqual(app.documents[0], doc)
+            doc = app.documents.open(join(self._fixture.data_dir, test_doc))
+            self.assertEqual(len(app.documents), 1)
+            # typical indexing operations
             self.assertEqual(app.documents[-1], doc)
+            # slicing
             self.assertEqual(app.documents[0:1][0], doc)
             self.assertEqual(app.documents[0:][0], doc)
             self.assertEqual(app.documents[:1][0], doc)
             self.assertEqual(app.documents[:][0], doc)
             self.assertEqual(app.documents.count(doc), 1)
+            # Verify that opening new documents doesn't alter the order
+            # of already open documents in the document list.
+            self.assertEqual(app.documents.open(
+                join(self._fixture.data_dir, test_doc2)), app.documents[1])
+            self.assertEqual(app.documents[test_doc], doc)  # indexing by name
             self.assertEqual(app.documents.index(doc), 0)
-            shutil.copy(in_file, self._fixture.out_dir)
-            app.documents.open(join(self._fixture.out_dir, test_doc))
-            self.assertEqual(app.documents[::2][0], doc)
+            self.assertEqual(app.documents[::2][0], doc)  # extended slicing
             reversed_docs = list(reversed(app.documents))
             self.assertSequenceEqual(
                 app.documents, list(reversed(reversed_docs)))
+            self.assertIn(doc, app.documents)
 
             for cur_doc in app.documents:
                 pass

@@ -39,7 +39,8 @@
 ############################################################
 
 import functools
-import itertools
+import weakref
+
 import win32com.client
 
 NO_OBJ = "none"
@@ -83,17 +84,23 @@ class Application(object):
         """
         self.quit()
 
-    def quit(self):
+    def quit(self, *args, **kwargs):
         """Close this word application.
+
+        `self` is this application.
+        Positional and keyword arguments are the same as those accepted
+        by the corresponding method in word DOM API.
+
+        """
+        self._app.Quit(*args, **kwargs)
+
+    @property
+    def documents(self):
+        """Collection of open documents
 
         `self` is this application.
 
         """
-        self._app.Quit()
-
-    @property
-    def documents(self):
-        """Collection of open documents"""
         return self._docs
 
 
@@ -104,6 +111,7 @@ class _Document(object):
     This document class is stateful in the sense that it holds a
     permanent reference(throughout its lifetime) to the underlying
     document COM object.
+
     """
 
     def __init__(self, doc_list, doc):
@@ -116,16 +124,42 @@ class _Document(object):
 
         """
         self.data = _LightDocument(doc)
-        self._parent_docs = doc_list
+        self._parent_docs = weakref.proxy(doc_list)
         self._doc = doc
 
-    def close(self):
-        """Close this document.
+    # context manager support
+    def __enter__(self):
+        """Setup a context for this word document.
 
         `self` is this word document.
 
         """
-        self._doc.Close()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        """Close this word document.
+
+        `self` is this word document.
+        `exc_type` is the type of raised exception if one was raised or
+                   None otherwise.
+        `exc_value` is the raised exception if one was raised or None
+                    otherwise.
+        `traceback` is the traceback when the exception occurred, if
+                    any, or None otherwise.
+
+        """
+        self.close()
+
+    def close(self, *args, **kwargs):
+        """Close this document.
+
+        `self` is this word document.
+        Positional and keyword arguments are the same as those accepted
+        by the corresponding method in word DOM API.
+        The method notifies the parent document list about closure.
+
+        """
+        self._doc.Close(*args, **kwargs)
         self._parent_docs.remove(self)
 
     def save(self):
@@ -143,6 +177,8 @@ class _Document(object):
         """Save this document to the given file.
 
         `self` is this word document.
+        Positional and keyword arguments are the same as those accepted
+        by the corresponding method in word DOM API.
         The method synchronizes data to the underlying COM object before
         saving.
 
@@ -151,9 +187,14 @@ class _Document(object):
         self._doc.SaveAs(*args, **kwargs)
 
     @property
-    def full_name(self):
-        """Full name of this document"""
-        return self._doc.FullName
+    def raw_doc(self):
+        """Wrapped COM document object
+
+        `self` is this word document.
+        The property isn't intended for direct manipulation by clients.
+
+        """
+        return self._doc
 
 
 class _Documents:
@@ -168,9 +209,7 @@ class _Documents:
 
         """
         self._raw_docs = docs
-        self._docs = []
-        self._docs.extend(
-            itertools.imap(functools.partial(_Document, self._docs), docs))
+        self._docs = map(functools.partial(_Document, self), docs)
 
     def __getattr__(self, name):
         """Support immutable list operations.
@@ -179,11 +218,46 @@ class _Documents:
         `name` is the attribute.
 
         """
-        if name in ["count", "index", "__len__", "__getitem__", "__iter__",
-                    "__reversed__", "__contains__"]:
+        if name in ["count", "index", "__len__", "__iter__", "__reversed__",
+                    "__contains__"]:
             return getattr(self._docs, name)
 
         raise AttributeError()
+
+    def __getitem__(self, key):
+        """Support integer and string indices.
+
+        `self` is this collection of documents.
+        `key` is document name/index to look up.
+
+        """
+        try:
+            return self._docs[key]  # integer indices
+        except TypeError:  # string indices
+            return self._get_doc_obj(self._raw_docs(key))
+
+    def add(self, *args, **kwargs):
+        """Add a new empty document.
+
+        `self` is this collection of documents.
+        Positional and keyword arguments are the same as those accepted
+        by the corresponding method in word DOM API.
+        The method returns the new document.
+
+        """
+        self._docs.append(_Document(self, self._raw_docs.Add(*args, **kwargs)))
+        return self._docs[-1]
+
+    def close(self, *args, **kwargs):
+        """Close all documents.
+
+        `self` is this collection of documents.
+        Positional and keyword arguments are the same as those accepted
+        by the corresponding method in word DOM API.
+
+        """
+        self._raw_docs.Close(*args, **kwargs)
+        self._docs = []
 
     def open(self, file_name, *args, **kwargs):
         """Open the given document file and return it.
@@ -194,26 +268,62 @@ class _Documents:
         by the corresponding method in word DOM API.
         If the document is already open, return it. Otherwise open the
         document, add it to this collection, and return it.
+
         """
+        new_doc = self._raw_docs.Open(file_name, *args, **kwargs)
         # Check if the document is already open.
-        match_docs = itertools.ifilter(
-            lambda doc: doc.full_name == file_name, self._docs)
-
-        for cur_doc in match_docs:
-            return cur_doc
-
+        try:
+            return self._get_doc_obj(new_doc)
         # The requested document isn't open, open and return it.
-        self._docs.append(_Document(
-            self._docs, self._raw_docs.Open(file_name, *args, **kwargs)))
-        return self._docs[-1]
+        except ValueError:
+
+            self._docs.append(_Document(self, new_doc))
+            return self._docs[-1]
+
+    def remove(self, doc):
+        """Remove the given document from this collection.
+
+        `self` is this collection of documents.
+        `doc` is the document to remove.
+        The method isn't intended for direct manipulation by clients.
+
+        """
+        self._docs.remove(doc)
+
+    def save(self, *args, **kwargs):
+        """Save all documents.
+
+        `self` is this collection of documents.
+        Positional and keyword arguments are the same as those accepted
+        by the corresponding method in word DOM API.
+
+        """
+        self._raw_docs.Save(*args, **kwargs)
+
+    def _get_doc_obj(self, raw_doc):
+        """Return the wrapper document for the given raw document.
+
+        `self` is this collection of documents.
+        `raw_doc` is the raw document to get whose wrapper.
+        The method raises a ValueError if no document wraps the given
+        raw document.
+
+        """
+        # Check if the document is wrapped.
+        for cur_doc in self._docs:
+            if cur_doc.raw_doc == raw_doc:
+                return cur_doc
+
+        raise ValueError()
 
 
-class _LightDocument(object):
+class _LightDocument:
 
     """Lightweight word document
 
     This document class is stateless; it doesn't wrap holds a reference
     to the underlying document COM object.
+
     """
 
     def __init__(self, doc):
@@ -248,6 +358,7 @@ class _LightDocument(object):
 
         `self` is this word document.
         `doc` is the underlying COM object to update.
+        The method isn't intended for direct manipulation by clients.
 
         """
         if self.active_theme == NO_OBJ:
