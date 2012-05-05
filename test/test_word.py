@@ -49,7 +49,7 @@ from mock import MagicMock
 import pyxser
 
 import Fixture
-from officedom.word import Application, NO_OBJ
+from officedom.word import Application, constants, NO_OBJ
 
 class AppContextTest(TestCase):
 
@@ -228,6 +228,21 @@ class DocTest(TestCase):
 
             for cur_doc in app.documents:
                 pass
+
+    def test_lang_style(self):
+        """Test language writing styles.
+
+        `self` is this test case.
+        Load a document and verify its language writing style.
+
+        """
+        test_doc = "test.doc"
+        orig_style = "Grammar Only"
+        with Application() as app:
+
+            doc = app.documents.open(join(self._fixture.data_dir, test_doc))
+            self.assertEqual(doc.data.active_writing_style[
+                constants.wdEnglishUS], orig_style)
 
     def test_multi_open(self):
         """Test opening the same document several times.

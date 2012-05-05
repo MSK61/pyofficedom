@@ -38,10 +38,14 @@
 #
 ############################################################
 
-import functools
+from functools import partial
+import itertools
 import weakref
 
+import pythoncom
 import win32com.client
+
+from utils import ReadOnlyList, WrapperObject
 
 NO_OBJ = "none"
 
@@ -60,6 +64,7 @@ class Application(object):
         appCls = "Word.Application"
         self._app = win32com.client.DispatchEx(appCls)
         self._docs = _Documents(self._app.Documents)
+        self._langs = ReadOnlyList(self._app.Languages, _Language)
 
     # context manager support
     def __enter__(self):
@@ -103,8 +108,17 @@ class Application(object):
         """
         return self._docs
 
+    @property
+    def languages(self):
+        """Collection of languages
 
-class _Document(object):
+        `self` is this application.
+
+        """
+        return self._langs
+
+
+class _Document(WrapperObject):
 
     """Word document
 
@@ -123,9 +137,9 @@ class _Document(object):
         `doc` is the underlying COM object representing the document.
 
         """
+        WrapperObject.__init__(self, doc)
         self.data = _LightDocument(doc)
         self._parent_docs = weakref.proxy(doc_list)
-        self._doc = doc
 
     # context manager support
     def __enter__(self):
@@ -159,7 +173,7 @@ class _Document(object):
         The method notifies the parent document list about closure.
 
         """
-        self._doc.Close(*args, **kwargs)
+        self._raw_obj.Close(*args, **kwargs)
         self._parent_docs.remove(self)
 
     def save(self):
@@ -170,8 +184,8 @@ class _Document(object):
         saving.
 
         """
-        self.data.sync(self._doc)
-        self._doc.Save()
+        self.data.sync(self._raw_obj)
+        self._raw_obj.Save()
 
     def save_as(self, *args, **kwargs):
         """Save this document to the given file.
@@ -183,21 +197,11 @@ class _Document(object):
         saving.
 
         """
-        self.data.sync(self._doc)
-        self._doc.SaveAs(*args, **kwargs)
-
-    @property
-    def raw_doc(self):
-        """Wrapped COM document object
-
-        `self` is this word document.
-        The property isn't intended for direct manipulation by clients.
-
-        """
-        return self._doc
+        self.data.sync(self._raw_obj)
+        self._raw_obj.SaveAs(*args, **kwargs)
 
 
-class _Documents:
+class _Documents(ReadOnlyList):
 
     """Collection of documents"""
 
@@ -208,33 +212,7 @@ class _Documents:
         `docs` are the COM objects representing documents.
 
         """
-        self._raw_docs = docs
-        self._docs = map(functools.partial(_Document, self), docs)
-
-    def __getattr__(self, name):
-        """Support immutable list operations.
-
-        `self` is this collection of documents.
-        `name` is the attribute.
-
-        """
-        if name in ["count", "index", "__len__", "__iter__", "__reversed__",
-                    "__contains__"]:
-            return getattr(self._docs, name)
-
-        raise AttributeError()
-
-    def __getitem__(self, key):
-        """Support integer and string indices.
-
-        `self` is this collection of documents.
-        `key` is document name/index to look up.
-
-        """
-        try:
-            return self._docs[key]  # integer indices
-        except TypeError:  # string indices
-            return self._get_doc_obj(self._raw_docs(key))
+        ReadOnlyList.__init__(self, docs, partial(_Document, self))
 
     def add(self, *args, **kwargs):
         """Add a new empty document.
@@ -245,8 +223,9 @@ class _Documents:
         The method returns the new document.
 
         """
-        self._docs.append(_Document(self, self._raw_docs.Add(*args, **kwargs)))
-        return self._docs[-1]
+        self._wrapper_list.append(
+            _Document(self, self._raw_list.Add(*args, **kwargs)))
+        return self._wrapper_list[-1]
 
     def close(self, *args, **kwargs):
         """Close all documents.
@@ -256,8 +235,8 @@ class _Documents:
         by the corresponding method in word DOM API.
 
         """
-        self._raw_docs.Close(*args, **kwargs)
-        self._docs = []
+        self._raw_list.Close(*args, **kwargs)
+        self._wrapper_list = []
 
     def open(self, file_name, *args, **kwargs):
         """Open the given document file and return it.
@@ -270,15 +249,15 @@ class _Documents:
         document, add it to this collection, and return it.
 
         """
-        new_doc = self._raw_docs.Open(file_name, *args, **kwargs)
+        new_doc = self._raw_list.Open(file_name, *args, **kwargs)
         # Check if the document is already open.
         try:
-            return self._get_doc_obj(new_doc)
+            return self._get_wrapper(new_doc)
         # The requested document isn't open, open and return it.
         except ValueError:
 
-            self._docs.append(_Document(self, new_doc))
-            return self._docs[-1]
+            self._wrapper_list.append(_Document(self, new_doc))
+            return self._wrapper_list[-1]
 
     def remove(self, doc):
         """Remove the given document from this collection.
@@ -288,7 +267,7 @@ class _Documents:
         The method isn't intended for direct manipulation by clients.
 
         """
-        self._docs.remove(doc)
+        self._wrapper_list.remove(doc)
 
     def save(self, *args, **kwargs):
         """Save all documents.
@@ -298,23 +277,36 @@ class _Documents:
         by the corresponding method in word DOM API.
 
         """
-        self._raw_docs.Save(*args, **kwargs)
+        self._raw_list.Save(*args, **kwargs)
 
-    def _get_doc_obj(self, raw_doc):
-        """Return the wrapper document for the given raw document.
 
-        `self` is this collection of documents.
-        `raw_doc` is the raw document to get whose wrapper.
-        The method raises a ValueError if no document wraps the given
-        raw document.
+class _Language(WrapperObject):
+
+    """language information"""
+
+    def __init__(self, lang):
+        """Create a language.
+
+        `self` is this language.
+        `lang` is the underlying COM object representing the language.
 
         """
-        # Check if the document is wrapped.
-        for cur_doc in self._docs:
-            if cur_doc.raw_doc == raw_doc:
-                return cur_doc
+        WrapperObject.__init__(self, lang)
 
-        raise ValueError()
+    def __getattr__(self, name):
+        """Support language properties.
+
+        `self` is this language.
+        `name` is the attribute.
+
+        """
+        prop_map = {"id": "ID", "name": "Name", "name_local": "NameLocal"}
+        prop_names = prop_map.iterkeys()
+
+        if name in prop_names:
+            return getattr(self._raw_obj, name)
+
+        raise AttributeError()
 
 
 class _LightDocument:
@@ -334,6 +326,17 @@ class _LightDocument:
 
         """
         self.active_theme = doc.ActiveTheme
+        self.active_writing_style = {}
+
+        for lang in doc.Application.Languages:
+            try:  # sorry, no clean way to know available languages
+                entry_maker = partial(
+                    self._style_entry, lang, doc.ActiveWritingStyle(lang.ID))
+            except pythoncom.com_error:
+                pass
+            else:
+                self.active_writing_style.update(
+                    itertools.imap(entry_maker, ["ID", "Name", "NameLocal"]))
 
     def __eq__(self, other):
         """Test if the two documents have the same content.
@@ -342,7 +345,20 @@ class _LightDocument:
         `other` is the other word document.
 
         """
-        return self.active_theme == other.active_theme
+        # All public data attributes should be equal for the equality
+        # test to succeed.
+        attr_names = dir(self)
+
+        for cur_attr in attr_names:
+            if not cur_attr.startswith('_'):  # Exclude private attributes.
+
+                attr_val = getattr(self, cur_attr)
+
+                if not callable(attr_val) and \
+                    attr_val != getattr(other, cur_attr):
+                    return False
+
+        return True
 
     def __ne__(self, other):
         """Test if the two documents have different content.
@@ -351,7 +367,7 @@ class _LightDocument:
         `other` is the other word document.
 
         """
-        return self.active_theme != other.active_theme
+        return not self == other
 
     def sync(self, doc):
         """Update the underlying COM object.
@@ -365,3 +381,18 @@ class _LightDocument:
             doc.RemoveTheme()
         else:
             doc.ApplyTheme(active_theme)
+
+        # The active writing style property can't be updated.
+
+    @staticmethod
+    def _style_entry(lang, style, attr):
+        """Return a writing style tuple.
+
+        `lang` is the language to work on.
+        `style` is the active writing style of the language.
+        `attr` is the key language attribute.
+        The method creates and returns a tuple of the specified language
+        attribute and its active writing style.
+
+        """
+        return getattr(lang, attr), style

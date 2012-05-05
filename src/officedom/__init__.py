@@ -46,6 +46,8 @@ import win32com.client.selecttlb
 
 import word
 
+__all__ = ["word"]
+
 def _init():
     """Initialize office-wide and application type libraries."""
     tlb_modules = {"Office": sys.modules[__name__], "Word": word}
