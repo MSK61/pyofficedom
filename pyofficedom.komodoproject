@@ -17,6 +17,8 @@
 </file>
 <file id="0bbae9f9-bd56-4b2f-9c9f-01b4034cef99" idref="cf4056fc-9941-4bd7-b3c2-11f2adebb1a5" name="__init__.py" url="src/officedom/__init__.py">
 </file>
+<file id="49a7285f-8587-43f8-ae45-cd68939bb3d2" idref="cf4056fc-9941-4bd7-b3c2-11f2adebb1a5" name="utils.py" url="src/officedom/utils.py">
+</file>
 <file id="e76cc1e9-7a7a-456e-a29d-7b39f64fbfdf" idref="cf4056fc-9941-4bd7-b3c2-11f2adebb1a5" name="word.py" url="src/officedom/word.py">
 </file>
 <file id="216271c3-58dd-4cae-bab8-0466093cce6c" idref="f51b9811-d0bc-4d93-83d3-6290fcea36fe" name="Fixture.py" url="test/Fixture.py">

@@ -237,12 +237,17 @@ class DocTest(TestCase):
 
         """
         test_doc = "test.doc"
-        orig_style = "Grammar Only"
+        lang_style = "Grammar Only"
         with Application() as app:
 
             doc = app.documents.open(join(self._fixture.data_dir, test_doc))
             self.assertEqual(doc.data.active_writing_style[
-                constants.wdEnglishUS], orig_style)
+                constants.wdEnglishUS], lang_style)
+            lang = app.languages.Item(constants.wdEnglishUS)
+            self.assertEqual(
+                doc.data.active_writing_style[lang.name], lang_style)
+            self.assertEqual(
+                doc.data.active_writing_style[lang.name_local], lang_style)
 
     def test_multi_open(self):
         """Test opening the same document several times.

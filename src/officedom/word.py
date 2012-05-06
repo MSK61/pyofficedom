@@ -64,7 +64,7 @@ class Application(object):
         appCls = "Word.Application"
         self._app = win32com.client.DispatchEx(appCls)
         self._docs = _Documents(self._app.Documents)
-        self._langs = ReadOnlyList(self._app.Languages, _Language)
+        self._langs = _Languages(self._app.Languages)
 
     # context manager support
     def __enter__(self):
@@ -304,9 +304,49 @@ class _Language(WrapperObject):
         prop_names = prop_map.iterkeys()
 
         if name in prop_names:
-            return getattr(self._raw_obj, name)
+            return getattr(self._raw_obj, prop_map[name])
 
         raise AttributeError()
+
+
+class _Languages(ReadOnlyList):
+
+    """Collection of languages"""
+
+    def __init__(self, langs):
+        """Create a collection of languages.
+
+        `self` is this collection of languages.
+        `docs` are the COM objects representing languages.
+
+        """
+        ReadOnlyList.__init__(self, langs, _Language)
+        
+    def Item(self, index):
+        """Return the language at the specified index.
+
+        `self` is this collection of languages.
+        `index` is the language ID, name, or local name.
+
+        """
+        return self._get_wrapper(self._raw_list.Item(index))
+
+    def _get_wrapper(self, raw_obj):
+        """Return the wrapper language for the given raw one.
+
+        `self` is this collection of languages.
+        `raw_obj` is the raw language to get whose wrapper.
+        The method raises a ValueError if no language wraps the given
+        raw one.
+
+        """
+        # Check if the language is wrapped.
+        for cur_lang in self._wrapper_list:
+            # Comparison is based on ID's.
+            if cur_lang.raw_obj.ID == raw_obj.ID:
+                return cur_lang
+
+        raise ValueError()
 
 
 class _LightDocument:

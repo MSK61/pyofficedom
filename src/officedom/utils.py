@@ -73,21 +73,21 @@ class ReadOnlyList:
         """Support integer and string indices.
 
         `self` is this collection of objects.
-        `key` is object name/index to look up.
+        `key` is object index/key to look up.
 
         """
         try:
             return self._wrapper_list[key]  # integer indices
-        except TypeError:  # string indices
+        except TypeError:  # string keys
             return self._get_wrapper(self._raw_list(key))
 
     def _get_wrapper(self, raw_obj):
-        """Return the wrapper object for the given raw object.
+        """Return the wrapper object for the given raw one.
 
         `self` is this collection of objects.
         `raw_obj` is the raw object to get whose wrapper.
         The method raises a ValueError if no object wraps the given raw
-        object.
+        one.
 
         """
         # Check if the object is wrapped.
