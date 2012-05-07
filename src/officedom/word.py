@@ -200,6 +200,15 @@ class _Document(WrapperObject):
         self.data.sync(self._raw_obj)
         self._raw_obj.SaveAs(*args, **kwargs)
 
+    @property
+    def name(self):
+        """Document name
+
+        `self` is this word document.
+
+        """
+        return self._raw_obj.Name
+
 
 class _Documents(ReadOnlyList):
 
@@ -321,7 +330,7 @@ class _Languages(ReadOnlyList):
 
         """
         ReadOnlyList.__init__(self, langs, _Language)
-        
+
     def Item(self, index):
         """Return the language at the specified index.
 

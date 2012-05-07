@@ -193,7 +193,7 @@ class DocTest(TestCase):
                 pass
             doc.close.assert_called_once_with()
 
-    def test_doc_seq(self):
+    def test_doc_col(self):
         """Test sequence operations on documents.
 
         `self` is this test case.
@@ -265,6 +265,19 @@ class DocTest(TestCase):
             self.assertEqual(len(app.documents), 1)
             app.documents.open(in_file)
             self.assertEqual(len(app.documents), 1)
+
+    def test_name_prop(self):
+        """Test document name property.
+
+        `self` is this test case.
+        Verify the document name property references the document file
+        name.
+
+        """
+        test_doc = "test.doc"
+        with Application() as app:
+            self.assertEqual(app.documents.open(
+                join(self._fixture.data_dir, test_doc)).name, test_doc)
 
 
 class _WorkDirFixture(Fixture.Fixture):
