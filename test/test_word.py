@@ -148,8 +148,8 @@ class DocChangeTest(TestCase):
         with Application() as app:
 
             doc = app.documents.open(join(self._fixture.data_dir, test_doc))
-            self.assertEqual(doc.attached_template.lower(),
-                             app.normal_template.full_name.lower())
+            self.assertEqual(
+                doc.attached_template, app.normal_template.full_name)
             # Modify and save the document.
             doc.attached_template = new_tmpl
             doc_data = doc.data
@@ -281,7 +281,7 @@ class DocTest(TestCase):
 
         """
         test_doc = "test.doc"
-        lang_style = "Grammar Only"
+        lang_style = "grammar only"
         with Application() as app:
             with app.documents.open(
                 join(self._fixture.data_dir, test_doc)) as doc:
@@ -474,8 +474,8 @@ class TmplTest(TestCase):
                 join(self._fixture.data_dir, test_tmpl),
                 Format=constants.wdOpenFormatTemplate) as tmpl:
 
-                self.assertEqual(tmpl.attached_template.lower(),
-                                 app.templates[1].full_name.lower())
+                self.assertEqual(
+                    tmpl.attached_template, app.templates[1].full_name)
                 # indexing by name
                 self.assertEqual(app.templates[app.normal_template.full_name],
                                  app.normal_template)

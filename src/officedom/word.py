@@ -247,12 +247,12 @@ class _Document(WrapperObject):
 
     @property
     def name(self):
-        """Case insensitive document name
+        """Lower case document name
 
         `self` is this word document.
 
         """
-        return self._raw_obj.Name
+        return self._raw_obj.Name.lower()
 
 
 class _Documents(ReadOnlyList):
@@ -412,10 +412,11 @@ class _Language(WrapperObject):
 
         """
         prop_map = {"id": "ID", "name": "Name", "name_local": "NameLocal"}
-        prop_names = prop_map.iterkeys()
 
-        if name in prop_names:
-            return getattr(self._raw_obj, prop_map[name])
+        if name in prop_map:
+
+            attr_val = getattr(self._raw_obj, prop_map[name])
+            return attr_val.__class__(str(attr_val).lower())
 
         raise AttributeError()
 
@@ -460,7 +461,7 @@ class _Languages(ReadOnlyList):
         raise ValueError()
 
 
-class _LightDocument(LightObject):
+class _LightDocument(LightObject, object):
 
     """Lightweight word document
 
@@ -476,8 +477,8 @@ class _LightDocument(LightObject):
         `doc` is the underlying COM object representing the document.
 
         """
-        self.active_theme = doc.ActiveTheme  # case insensitive
-        self._tmpl = doc.AttachedTemplate.FullName
+        self.active_theme = doc.ActiveTheme.lower()  # lower case
+        self._tmpl = doc.AttachedTemplate.FullName.lower()
         self.active_writing_style = {}
 
         for lang in doc.Application.Languages:
@@ -523,7 +524,7 @@ class _LightDocument(LightObject):
         `value` is the desired template itself or its full name.
 
         """
-        self._tmpl = str(value)
+        self._tmpl = str(value).lower()
 
     @staticmethod
     def _style_entry(lang, style, attr):
@@ -536,7 +537,8 @@ class _LightDocument(LightObject):
         attribute and its active writing style.
 
         """
-        return getattr(lang, attr), style
+        attr_val = getattr(lang, attr)
+        return attr_val.__class__(str(attr_val).lower()), style.lower()
 
 
 class _LightTemplate(LightObject):
@@ -614,16 +616,16 @@ class _Template(WrapperObject):
         `self` is this word template.
 
         """
-        return self._raw_obj.FullName
+        return self._raw_obj.FullName.lower()
 
     @property
     def name(self):
-        """Case insensitive template name
+        """Lower case template name
 
         `self` is this word template.
 
         """
-        return self._raw_obj.Name
+        return self._raw_obj.Name.lower()
 
 
 class _Templates(ReadOnlyList):
