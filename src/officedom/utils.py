@@ -40,6 +40,46 @@
 
 import functools
 
+class LightObject:
+
+    """In-memory object
+
+    This class represents a POJO object which holds only simple
+    properties stored in memory but no indirect resources.
+    """
+
+    def __eq__(self, other):
+        """Test if the two objects have the same content.
+
+        `self` is this object.
+        `other` is the other object.
+
+        """
+        # All public data attributes should be equal for the equality
+        # test to succeed.
+        attr_names = dir(self)
+
+        for cur_attr in attr_names:
+            if not cur_attr.startswith('_'):  # Exclude private attributes.
+
+                attr_val = getattr(self, cur_attr)
+
+                if not callable(attr_val) and \
+                    attr_val != getattr(other, cur_attr):  # Exclude methods.
+                    return False
+
+        return True
+
+    def __ne__(self, other):
+        """Test if the two objects have different content.
+
+        `self` is this object.
+        `other` is the other object.
+
+        """
+        return not self == other
+
+
 class ReadOnlyList:
 
     """Read-only collection of objects"""
@@ -79,9 +119,9 @@ class ReadOnlyList:
         try:
             return self._wrapper_list[key]  # integer indices
         except TypeError:  # string keys
-            return self._get_wrapper(self._raw_list(key))
+            return self.get_wrapper(self._raw_list(key))
 
-    def _get_wrapper(self, raw_obj):
+    def get_wrapper(self, raw_obj):
         """Return the wrapper object for the given raw one.
 
         `self` is this collection of objects.

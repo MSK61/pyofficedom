@@ -61,20 +61,16 @@ def _init():
 
         cur_tlb = 0
         tlb_prefix = "Microsoft " + cur_app
-        tlb_found = False
 
         # Generate a module for the current supported office
         # application.
-        while not tlb_found and cur_tlb < num_of_tlbs:
-
-            if tlbs[cur_tlb].desc.startswith(tlb_prefix) and \
-                tlbs[cur_tlb].desc.endswith(tlb_suffix):
-
-                cur_mod.constants = win32com.client.gencache.EnsureModule(
-                    tlbs[cur_tlb].clsid, tlbs[cur_tlb].lcid, int(tlbs[
-                    cur_tlb].major), int(tlbs[cur_tlb].minor)).constants
-                tlb_found = True
-
+        while cur_tlb < num_of_tlbs and (not tlbs[cur_tlb].desc.startswith(
+            tlb_prefix) or not tlbs[cur_tlb].desc.endswith(tlb_suffix)):
             cur_tlb += 1
+
+        if cur_tlb < num_of_tlbs:
+            cur_mod.constants = win32com.client.gencache.EnsureModule(
+                tlbs[cur_tlb].clsid, tlbs[cur_tlb].lcid, int(tlbs[
+                cur_tlb].major), int(tlbs[cur_tlb].minor)).constants
 
 _init()

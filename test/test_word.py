@@ -38,6 +38,7 @@
 #
 ############################################################
 
+from functools import partial
 import os
 from os.path import abspath, join
 from shutil import rmtree
@@ -61,7 +62,7 @@ class AppContextTest(TestCase):
         `self` is this test case.
         Use an application object as the context manager of with
         statement.
-        Verify the application is quitted  upon context exit.
+        Verify that the application is quitted  upon context exit.
 
         """
         app = Application()
@@ -108,7 +109,7 @@ class DocChangeTest(TestCase):
         Load a document, change its active theme, and then save the
         document again.
         Close the document.
-        Open the document again and verify the theme was changed.
+        Open the document again and verify that the theme was changed.
 
         """
         test_doc = "test.doc"
@@ -123,7 +124,47 @@ class DocChangeTest(TestCase):
             doc.save_as(out_file)
             doc.close()
             # Reopen and validate the document.
-            self.assertEqual(app.documents.open(out_file).data, doc_data)
+            with app.documents.open(out_file) as doc:
+                self.assertEqual(doc.data, doc_data)
+
+    def test_tmpl(self):
+        """Test changing templates.
+
+        `self` is this test case.
+        Load a document, change its template, and then save the document
+        again.
+        Close the document.
+        Open the document again and verify that the template was
+        changed.
+        Revert the document back to its original template.
+        Close the document.
+        Open the document again and verify that the template was
+        reverted.
+
+        """
+        test_doc = "test.doc"
+        new_tmpl = "Elegant Letter.dot"
+        out_file = join(self._fixture.out_dir, test_doc)
+        with Application() as app:
+
+            doc = app.documents.open(join(self._fixture.data_dir, test_doc))
+            self.assertEqual(doc.attached_template.lower(),
+                             app.normal_template.full_name.lower())
+            # Modify and save the document.
+            doc.attached_template = new_tmpl
+            doc_data = doc.data
+            doc.save_as(out_file)
+            doc.close()
+            # Reopen and validate the document.
+            doc = app.documents.open(out_file)
+            self.assertEqual(doc.data, doc_data)
+            # Revert the template and save the document.
+            doc.attached_template = app.normal_template
+            doc_data = doc.data
+            doc.close(constants.wdSaveChanges)
+            # Reopen and validate the document.
+            with app.documents.open(out_file) as doc:
+                self.assertEqual(doc.data, doc_data)
 
 
 class DocTest(TestCase):
@@ -157,30 +198,29 @@ class DocTest(TestCase):
         self._fixture.tearDown()
 
     def test_acyclic(self):
-        """Verify no cycles exist in the document tree.
+        """Verify that no cycles exist in the document tree.
 
         `self` is this test case.
         Load a document.
-        Verify the document object has no cyclic relations throughout
-        its object hierarchy.
+        Verify that the document object has no cyclic relations
+        throughout its object hierarchy.
 
         """
         test_doc = "test.doc"
         encoding = "utf-8"
         objref_path = ".//*[@objref]"
         with Application() as app:
-
-            doc_data = app.documents.open(
-                join(self._fixture.data_dir, test_doc)).data
-            self.assertIsNone(xml.etree.ElementTree.fromstring(
-                pyxser.serialize(doc_data, encoding)).find(objref_path))
+            with app.documents.open(
+                join(self._fixture.data_dir, test_doc)) as doc:
+                self.assertIsNone(xml.etree.ElementTree.fromstring(
+                    pyxser.serialize(doc.data, encoding)).find(objref_path))
 
     def test_context(self):
         """Test context manager features of documents.
 
         `self` is this test case.
         Use an document as the context manager of with statement.
-        Verify the document is closed appropriately upon context
+        Verify that the document is closed appropriately upon context
         exit.
 
         """
@@ -197,15 +237,17 @@ class DocTest(TestCase):
         """Test sequence operations on documents.
 
         `self` is this test case.
-        Verify typical immutable sequence operations work for documents.
+        Verify that typical immutable sequence operations work for documents.
 
         """
+        path_creator = partial(join, self._fixture.data_dir)
         test_doc = "test.doc"
         test_doc2 = "a.doc"
         with Application() as app:
 
-            doc = app.documents.open(join(self._fixture.data_dir, test_doc))
-            self.assertEqual(len(app.documents), 1)
+            self.assertEqual(len(app.documents), 0)
+            self.assertFalse(app.documents)
+            doc = app.documents.open(path_creator(test_doc))
             # typical indexing operations
             self.assertEqual(app.documents[-1], doc)
             # slicing
@@ -216,8 +258,8 @@ class DocTest(TestCase):
             self.assertEqual(app.documents.count(doc), 1)
             # Verify that opening new documents doesn't alter the order
             # of already open documents in the document list.
-            self.assertEqual(app.documents.open(
-                join(self._fixture.data_dir, test_doc2)), app.documents[1])
+            self.assertEqual(
+                app.documents.open(path_creator(test_doc2)), app.documents[1])
             self.assertEqual(app.documents[test_doc], doc)  # indexing by name
             self.assertEqual(app.documents.index(doc), 0)
             self.assertEqual(app.documents[::2][0], doc)  # extended slicing
@@ -229,6 +271,8 @@ class DocTest(TestCase):
             for cur_doc in app.documents:
                 pass
 
+            app.documents.close()
+
     def test_lang_style(self):
         """Test language writing styles.
 
@@ -239,15 +283,16 @@ class DocTest(TestCase):
         test_doc = "test.doc"
         lang_style = "Grammar Only"
         with Application() as app:
+            with app.documents.open(
+                join(self._fixture.data_dir, test_doc)) as doc:
 
-            doc = app.documents.open(join(self._fixture.data_dir, test_doc))
-            self.assertEqual(doc.data.active_writing_style[
-                constants.wdEnglishUS], lang_style)
-            lang = app.languages.Item(constants.wdEnglishUS)
-            self.assertEqual(
-                doc.data.active_writing_style[lang.name], lang_style)
-            self.assertEqual(
-                doc.data.active_writing_style[lang.name_local], lang_style)
+                self.assertEqual(doc.data.active_writing_style[
+                    constants.wdEnglishUS], lang_style)
+                lang = app.languages.Item(constants.wdEnglishUS)
+                self.assertEqual(
+                    doc.data.active_writing_style[lang.name], lang_style)
+                self.assertEqual(
+                    doc.data.active_writing_style[lang.name_local], lang_style)
 
     def test_multi_open(self):
         """Test opening the same document several times.
@@ -260,24 +305,189 @@ class DocTest(TestCase):
         test_doc = "test.doc"
         in_file = join(self._fixture.data_dir, test_doc)
         with Application() as app:
+            with app.documents.open(in_file) as doc:
 
-            app.documents.open(in_file)
-            self.assertEqual(len(app.documents), 1)
-            app.documents.open(in_file)
-            self.assertEqual(len(app.documents), 1)
+                self.assertEqual(len(app.documents), 1)
+                self.assertEqual(app.documents.open(in_file), doc)
+                self.assertEqual(len(app.documents), 1)
 
     def test_name_prop(self):
         """Test document name property.
 
         `self` is this test case.
-        Verify the document name property references the document file
-        name.
+        Verify that the document name property references the document
+        file name.
 
         """
         test_doc = "test.doc"
         with Application() as app:
-            self.assertEqual(app.documents.open(
-                join(self._fixture.data_dir, test_doc)).name, test_doc)
+            with app.documents.open(
+                join(self._fixture.data_dir, test_doc)) as doc:
+                self.assertEqual(doc.name, test_doc)
+
+
+class TmplTest(TestCase):
+
+    """Test case for template properties and operations"""
+
+    def __init__(self, test_func):
+        """Create a template test.
+
+        `self` is this test case.
+        `test_func` is the test function to run.
+
+        """
+        TestCase.__init__(self, test_func)
+        self._fixture = _WorkDirFixture()
+
+    def setUp(self):
+        """Prepare for the test.
+
+        `self` is this test case.
+
+        """
+        self._fixture.setUp()
+
+    def tearDown(self):
+        """Delete the test working directory.
+
+        `self` is this test case.
+
+        """
+        self._fixture.tearDown()
+
+    @unittest.expectedFailure
+    def test_acyclic(self):
+        """Verify that no cycles exist in the template tree.
+
+        `self` is this test case.
+        Verify that the normal template object has no cyclic relations
+        throughout its object hierarchy.
+
+        """
+        encoding = "utf-8"
+        objref_path = ".//*[@objref]"
+        with Application() as app:
+            self.assertIsNone(
+                xml.etree.ElementTree.fromstring(pyxser.serialize(
+                    app.normal_template.data, encoding)).find(objref_path))
+
+    def test_doc_rel(self):
+        """Verify that relations between documents and templates.
+
+        `self` is this test case.
+        Verify that loading templates/documents reflect in each other
+        correctly.
+
+        """
+        test_doc = "test.dot"
+        path_creator = partial(join, self._fixture.data_dir)
+        tmpl = "Elegant Letter.dot"
+        pure_doc = "test.doc"
+        with Application() as app:
+
+            # Open a template as a document and verify that the document
+            # collection is updated.
+            self.assertFalse(app.documents)
+            with app.normal_template.open_as_document():
+                self.assertEqual(len(app.documents), 1)
+            # Open a document referencing a new template and verify that
+            # the template collection is updated.
+            # Note that the normal template is always loaded upon
+            # starting the word application.
+            self.assertEqual(len(app.templates), 1)
+            with app.documents.open(path_creator(test_doc)):
+                self.assertEqual(len(app.templates), 2)
+            # After closing the document, the number of referenced
+            # templates falls back.
+            self.assertEqual(len(app.templates), 1)
+            # Create a new document referencing a new template and
+            # verify that the template collection is updated.
+            with app.documents.add(tmpl):
+                self.assertEqual(len(app.templates), 2)
+            # After closing the document, the number of referenced
+            # templates falls back.
+            self.assertEqual(len(app.templates), 1)
+            # Associate a new template to a document and verify that the
+            # template collection is updated.
+            doc = app.documents.add()
+            self.assertEqual(len(app.templates), 1)
+            doc.attached_template = tmpl
+            self.assertEqual(len(app.templates), 2)
+            # After closing all the documents, the number of referenced
+            # templates falls back.
+            app.documents.close(constants.wdDoNotSaveChanges)
+            self.assertEqual(len(app.templates), 1)
+
+    def test_multi_open(self):
+        """Test opening the same template in several ways.
+
+        `self` is this test case.
+        Load a template twice.
+        Verify that the template is opened only once.
+
+        """
+        with Application() as app:
+            with app.normal_template.open_as_document() as tmpl:
+
+                self.assertEqual(len(app.documents), 1)
+                self.assertEqual(app.documents.open(
+                    app.normal_template.full_name,
+                    Format=constants.wdOpenFormatTemplate), tmpl)
+                self.assertEqual(len(app.documents), 1)
+
+    def test_normal(self):
+        """Test auto-loading of the normal template.
+
+        `self` is this test case.
+        Verify that the normal template is loaded upon application
+        startup.
+
+        """
+        with Application() as app:
+            self.assertIn(app.normal_template, app.templates)
+
+    def test_tmpl_col(self):
+        """Test sequence operations on template.
+
+        `self` is this test case.
+        Verify that typical immutable sequence operations work for
+        templates.
+
+        """
+        test_tmpl = "test.dot"
+        with Application() as app:
+
+            self.assertEqual(len(app.templates), 1)
+            self.assertTrue(app.templates)
+            # typical indexing operations
+            self.assertEqual(app.templates[-1], app.normal_template)
+            # slicing
+            self.assertEqual(app.templates[0:1][0], app.normal_template)
+            self.assertEqual(app.templates[0:][0], app.normal_template)
+            self.assertEqual(app.templates[:1][0], app.normal_template)
+            self.assertEqual(app.templates[:][0], app.normal_template)
+            self.assertEqual(app.templates.count(app.normal_template), 1)
+            # Verify that opening new templates doesn't alter the order
+            # of already open templates in the template list.
+            with app.documents.open(
+                join(self._fixture.data_dir, test_tmpl),
+                Format=constants.wdOpenFormatTemplate) as tmpl:
+
+                self.assertEqual(tmpl.attached_template.lower(),
+                                 app.templates[1].full_name.lower())
+                # indexing by name
+                self.assertEqual(app.templates[app.normal_template.full_name],
+                                 app.normal_template)
+                self.assertEqual(app.templates.index(app.normal_template), 0)
+                # extended slicing
+                self.assertEqual(app.templates[::2][0], app.normal_template)
+                reversed_tmpls = list(reversed(app.templates))
+                self.assertSequenceEqual(
+                    app.templates, list(reversed(reversed_tmpls)))
+
+                for cur_tmpl in app.templates:
+                    pass
 
 
 class _WorkDirFixture(Fixture.Fixture):
