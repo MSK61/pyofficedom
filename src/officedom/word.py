@@ -280,7 +280,7 @@ class _Documents(ReadOnlyList):
         template is loaded.
 
         """
-        doc = self._raw_list.Add(*args, **kwargs)
+        doc = self._raw_obj.Add(*args, **kwargs)
         self._load_tmpl(doc.AttachedTemplate)
         return self._add_new_doc(doc)
 
@@ -311,7 +311,7 @@ class _Documents(ReadOnlyList):
         The method updates the list of loaded templates as well.
 
         """
-        self._raw_list.Close(*args, **kwargs)
+        self._raw_obj.Close(*args, **kwargs)
         self._wrapper_list = []
         self.tmpls.cleanup()
 
@@ -327,7 +327,7 @@ class _Documents(ReadOnlyList):
         the template is loaded.
 
         """
-        doc = self._raw_list.Open(file_name, *args, **kwargs)
+        doc = self._raw_obj.Open(file_name, *args, **kwargs)
         self._load_tmpl(doc.AttachedTemplate)
         return self.add_raw_doc(doc)
 
@@ -362,7 +362,7 @@ class _Documents(ReadOnlyList):
         by the corresponding method in word DOM API.
 
         """
-        self._raw_list.Save(*args, **kwargs)
+        self._raw_obj.Save(*args, **kwargs)
 
     def _add_new_doc(self, raw_doc):
         """Add a new raw document and return the wrapper one.
@@ -441,7 +441,7 @@ class _Languages(ReadOnlyList):
         `index` is the language ID, name, or local name.
 
         """
-        return self.get_wrapper(self._raw_list(index))
+        return self.get_wrapper(self._raw_obj(index))
 
     def get_wrapper(self, raw_obj):
         """Return the wrapper language for the given raw one.
@@ -665,7 +665,7 @@ class _Templates(ReadOnlyList):
 
         while count < num_of_tmpls:
             # template still referenced
-            if self._wrapper_list[count].raw_obj in self._raw_list:
+            if self._wrapper_list[count].raw_obj in self._raw_obj:
                 count += 1
             else:  # template no longer referenced
 

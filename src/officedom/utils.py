@@ -80,7 +80,21 @@ class LightObject:
         return not self == other
 
 
-class ReadOnlyList:
+class _Wrapper:
+
+    """Wrapper around a raw object"""
+
+    def __init__(self, raw_obj):
+        """Create a raw object wrapper.
+
+        `self` is this wrapper.
+        `raw_obj` is the raw object.
+
+        """
+        self._raw_obj = raw_obj
+
+
+class ReadOnlyList(_Wrapper):
 
     """Read-only collection of objects"""
 
@@ -93,7 +107,7 @@ class ReadOnlyList:
                     list.
 
         """
-        self._raw_list = raw_list
+        _Wrapper.__init__(self, raw_list)
         self._wrapper_list = map(conv_func, raw_list)
 
     def __getattr__(self, name):
@@ -119,7 +133,7 @@ class ReadOnlyList:
         try:
             return self._wrapper_list[key]  # integer indices
         except TypeError:  # string keys
-            return self.get_wrapper(self._raw_list(key))
+            return self.get_wrapper(self._raw_obj(key))
 
     def get_wrapper(self, raw_obj):
         """Return the wrapper object for the given raw one.
@@ -138,7 +152,7 @@ class ReadOnlyList:
         raise ValueError()
 
 
-class WrapperObject(object):
+class WrapperObject(_Wrapper, object):
 
     """Wrapper around a raw object"""
 
@@ -149,7 +163,7 @@ class WrapperObject(object):
         `raw_obj` is the raw object.
 
         """
-        self._raw_obj = raw_obj
+        _Wrapper.__init__(self, raw_obj)
 
     @property
     def raw_obj(self):
