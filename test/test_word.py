@@ -41,6 +41,7 @@
 from functools import partial
 import os
 from os.path import abspath, join
+import shutil
 from shutil import rmtree
 import unittest
 from unittest import TestCase
@@ -326,6 +327,68 @@ class DocTest(TestCase):
                 self.assertEqual(doc.name, test_doc)
 
 
+class TmplChangeTest(TestCase):
+
+    """Test case for changing template content and properties"""
+
+    def __init__(self, test_func):
+        """Create a template change test.
+
+        `self` is this test case.
+        `test_func` is the test function to run.
+
+        """
+        TestCase.__init__(self, test_func)
+        self._fixture = _WorkDirFixture()
+
+    def setUp(self):
+        """Prepare for the test.
+
+        `self` is this test case.
+
+        """
+        self._fixture.setUp()
+
+    def tearDown(self):
+        """Delete the test working directory.
+
+        `self` is this test case.
+
+        """
+        self._fixture.tearDown()
+
+    def test_auto_txt(self):
+        """Test changing autoText.
+
+        `self` is this test case.
+        Load a template, Add autoText entries to it, and then save the
+        template again.
+        Close the template.
+        Open the template again and verify that the autoText entries
+        were updated.
+
+        """
+        test_tmpl = "test.dot"
+        shutil.copy(
+            join(self._fixture.data_dir, test_tmpl), self._fixture.out_dir)
+        out_tmpl = join(self._fixture.out_dir, test_tmpl)
+        new_entries = {"dear": "honey"}
+        with Application() as app:
+
+            doc = app.documents.open(
+                out_tmpl, Format=constants.wdOpenFormatTemplate)
+            tmpl_data = app.templates[doc.attached_template].data
+            self.assertFalse(tmpl_data.auto_text_entries)
+            # Modify and save the template.
+            tmpl_data.auto_text_entries = new_entries
+            app.templates[doc.attached_template].save()
+            doc.close()
+            # Reopen and validate the template.
+            with app.documents.open(
+                out_tmpl, Format=constants.wdOpenFormatTemplate) as doc:
+                self.assertEqual(app.templates[doc.attached_template].data, tmpl_data)
+
+
 class TmplTest(TestCase):
 
     """Test case for template properties and operations"""
@@ -356,7 +419,6 @@ class TmplTest(TestCase):
         """
         self._fixture.tearDown()
 
-    @unittest.expectedFailure
     def test_acyclic(self):
         """Verify that no cycles exist in the template tree.
 

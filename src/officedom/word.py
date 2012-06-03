@@ -477,8 +477,8 @@ class _LightDocument(LightObject, object):
         `doc` is the underlying COM object representing the document.
 
         """
-        self.active_theme = doc.ActiveTheme.lower()  # lower case
-        self._tmpl = doc.AttachedTemplate.FullName.lower()
+        self._active_theme = doc.ActiveTheme
+        self._tmpl = doc.AttachedTemplate.FullName
         self.active_writing_style = {}
 
         for lang in doc.Application.Languages:
@@ -502,10 +502,29 @@ class _LightDocument(LightObject, object):
         if self.active_theme == NO_OBJ:
             doc.RemoveTheme()
         else:
-            doc.ApplyTheme(self.active_theme)
+            doc.ApplyTheme(self._active_theme)
 
         # The active writing style property can't be updated.
         doc.AttachedTemplate = self._tmpl
+
+    @property
+    def active_theme(self):
+        """Active theme
+
+        `self` is this word document.
+
+        """
+        return self._active_theme.lower()  # lower case
+
+    @active_theme.setter
+    def active_theme(self, value):
+        """Set the active theme for this document.
+
+        `self` is this word document.
+        `value` is the desired active theme.
+
+        """
+        self._active_theme = value
 
     @property
     def attached_template(self):
@@ -514,7 +533,7 @@ class _LightDocument(LightObject, object):
         `self` is this word document.
 
         """
-        return self._tmpl
+        return self._tmpl.lower()  # lower case
 
     @attached_template.setter
     def attached_template(self, value):
@@ -524,7 +543,7 @@ class _LightDocument(LightObject, object):
         `value` is the desired template itself or its full name.
 
         """
-        self._tmpl = str(value).lower()
+        self._tmpl = str(value)
 
     @staticmethod
     def _style_entry(lang, style, attr):
@@ -557,7 +576,26 @@ class _LightTemplate(LightObject):
         `tmpl` is the underlying COM object representing the template.
 
         """
-        pass
+        self.auto_text_entries = {}
+        self.auto_text_entries.update(
+            (entry.Name, entry.Value) for entry in tmpl.AutoTextEntries)
+
+    def sync(self, tmpl):
+        """Update the underlying COM object.
+
+        `self` is this word template.
+        `tmpl` is the underlying COM object to update.
+
+        """
+        # Rewrite the autoText entries of the raw template.
+        for entry in tmpl.AutoTextEntries:
+            entry.Delete()
+
+        entries = self.auto_text_entries.iteritems()
+
+        for name, val in entries:
+            tmpl.AutoTextEntries.Add(
+                name, tmpl.Application.Selection.Range).Value = val
 
 
 class _Template(WrapperObject):
@@ -589,7 +627,7 @@ class _Template(WrapperObject):
         `self` is this word template.
 
         """
-        return self.full_name
+        return self._raw_obj.FullName
 
     def open_as_document(self):
         """Open this template as a document.
@@ -607,6 +645,7 @@ class _Template(WrapperObject):
         to be saved.
 
         """
+        self.data.sync(self._raw_obj)
         self._raw_obj.Save()
 
     @property
