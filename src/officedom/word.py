@@ -576,8 +576,7 @@ class _LightTemplate(LightObject):
         `tmpl` is the underlying COM object representing the template.
 
         """
-        self.auto_text_entries = {}
-        self.auto_text_entries.update(
+        self.auto_text_entries = dict(
             (entry.Name, entry.Value) for entry in tmpl.AutoTextEntries)
 
     def sync(self, tmpl):

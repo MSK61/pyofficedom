@@ -369,18 +369,22 @@ class TmplChangeTest(TestCase):
 
         """
         test_tmpl = "test.dot"
-        shutil.copy(
-            join(self._fixture.data_dir, test_tmpl), self._fixture.out_dir)
         out_tmpl = join(self._fixture.out_dir, test_tmpl)
-        new_entries = {"dear": "honey"}
+        shutil.copy(join(self._fixture.data_dir, test_tmpl), out_tmpl)
+        mod_entry = "hello"
+        del_entry = "good morning"
         with Application() as app:
 
             doc = app.documents.open(
                 out_tmpl, Format=constants.wdOpenFormatTemplate)
             tmpl_data = app.templates[doc.attached_template].data
-            self.assertFalse(tmpl_data.auto_text_entries)
+            self.assertEqual(
+                tmpl_data.auto_text_entries, dict((entry, entry) for entry in
+                    [mod_entry, del_entry, "greetings"]))
             # Modify and save the template.
-            tmpl_data.auto_text_entries = new_entries
+            tmpl_data.auto_text_entries.update(
+                {mod_entry: "hi", "See you!": "bye"})
+            del tmpl_data.auto_text_entries[del_entry]
             app.templates[doc.attached_template].save()
             doc.close()
             # Reopen and validate the template.
