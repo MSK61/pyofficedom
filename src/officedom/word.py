@@ -4,7 +4,7 @@
 
 ############################################################
 #
-# Copyright 2012 Mohammed El-Afifi
+# Copyright 2012, 2014 Mohammed El-Afifi
 # This file is part of pyofficedom.
 #
 # pyofficedom is free software: you can redistribute it and/or modify
