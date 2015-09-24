@@ -4,7 +4,7 @@
 
 ############################################################
 #
-# Copyright 2012, 2014 Mohammed El-Afifi
+# Copyright 2012, 2014, 2015 Mohammed El-Afifi
 # This file is part of pyofficedom.
 #
 # pyofficedom is free software: you can redistribute it and/or modify
@@ -33,6 +33,8 @@
 #
 # environment:  ActiveState Komodo IDE, version 6.1.3, build 66534,
 #               windows xp professional
+#               KWrite 5.0.0, python 2.7.10, Fedora release 22
+#               (Twenty Two)
 #
 # notes:        This is a private program.
 #
@@ -40,13 +42,10 @@
 
 from functools import partial
 import itertools
-from weakref import proxy
-
 import pythoncom
-import win32com.client
-
 from utils import LightObject, ReadOnlyList, WrapperObject
-
+from weakref import proxy
+import win32com.client
 NO_OBJ = "none"
 
 class Application(object):
