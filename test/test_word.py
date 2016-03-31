@@ -252,9 +252,9 @@ class DocTest(TestCase):
             # typical indexing operations
             self.assertEqual(app.documents[-1], doc)
             # slicing
-            self.assertEqual(app.documents[0:1][0], doc)
-            self.assertEqual(app.documents[0:][0], doc)
-            self.assertEqual(app.documents[:1][0], doc)
+            self.assertEqual(app.documents[0 : 1][0], doc)
+            self.assertEqual(app.documents[0 :][0], doc)
+            self.assertEqual(app.documents[: 1][0], doc)
             self.assertEqual(app.documents[:][0], doc)
             self.assertEqual(app.documents.count(doc), 1)
             # Verify that opening new documents doesn't alter the order
@@ -263,7 +263,7 @@ class DocTest(TestCase):
                 app.documents.open(path_creator(test_doc2)), app.documents[1])
             self.assertEqual(app.documents[test_doc], doc)  # indexing by name
             self.assertEqual(app.documents.index(doc), 0)
-            self.assertEqual(app.documents[::2][0], doc)  # extended slicing
+            self.assertEqual(app.documents[:: 2][0], doc)  # extended slicing
             reversed_docs = list(reversed(app.documents))
             self.assertSequenceEqual(
                 app.documents, list(reversed(reversed_docs)))
@@ -390,7 +390,8 @@ class TmplChangeTest(TestCase):
             # Reopen and validate the template.
             with app.documents.open(
                 out_tmpl, Format=constants.wdOpenFormatTemplate) as doc:
-                self.assertEqual(app.templates[doc.attached_template].data, tmpl_data)
+                self.assertEqual(
+                app.templates[doc.attached_template].data, tmpl_data)
 
 
 class TmplTest(TestCase):
@@ -529,9 +530,9 @@ class TmplTest(TestCase):
             # typical indexing operations
             self.assertEqual(app.templates[-1], app.normal_template)
             # slicing
-            self.assertEqual(app.templates[0:1][0], app.normal_template)
-            self.assertEqual(app.templates[0:][0], app.normal_template)
-            self.assertEqual(app.templates[:1][0], app.normal_template)
+            self.assertEqual(app.templates[0 : 1][0], app.normal_template)
+            self.assertEqual(app.templates[0 :][0], app.normal_template)
+            self.assertEqual(app.templates[: 1][0], app.normal_template)
             self.assertEqual(app.templates[:][0], app.normal_template)
             self.assertEqual(app.templates.count(app.normal_template), 1)
             # Verify that opening new templates doesn't alter the order
@@ -547,7 +548,7 @@ class TmplTest(TestCase):
                                  app.normal_template)
                 self.assertEqual(app.templates.index(app.normal_template), 0)
                 # extended slicing
-                self.assertEqual(app.templates[::2][0], app.normal_template)
+                self.assertEqual(app.templates[:: 2][0], app.normal_template)
                 reversed_tmpls = list(reversed(app.templates))
                 self.assertSequenceEqual(
                     app.templates, list(reversed(reversed_tmpls)))

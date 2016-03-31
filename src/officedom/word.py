@@ -60,8 +60,8 @@ class Application(object):
         if no current one is running.
 
         """
-        appCls = "Word.Application"
-        self._app = win32com.client.DispatchEx(appCls)
+        app_cls = "Word.Application"
+        self._app = win32com.client.DispatchEx(app_cls)
         self._docs = _Documents(self._app.Documents)
         self._langs = _Languages(self._app.Languages)
         self._templates = _Templates(self._app.Templates, self._docs)
