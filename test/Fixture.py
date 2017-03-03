@@ -4,7 +4,7 @@
 
 ############################################################
 #
-# Copyright 2012, 2014 Mohammed El-Afifi
+# Copyright 2012, 2014, 2017 Mohammed El-Afifi
 # This file is part of pyofficedom.
 #
 # pyofficedom is free software: you can redistribute it and/or modify
@@ -23,13 +23,13 @@
 #
 # program:      python office DOM
 #
-# file:         test_load_save.py
+# file:         Fixture.py
 #
 # function:     test utility classes, interfaces, and functions
 #
 # description:  contains test utilities
 #
-# author:       Mohammed Safwat (MS)
+# author:       Mohammed El-Afifi (ME)
 #
 # environment:  ActiveState Komodo IDE, version 6.1.3, build 66534,
 #               windows xp professional

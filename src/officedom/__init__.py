@@ -4,7 +4,7 @@
 
 ############################################################
 #
-# Copyright 2012, 2014 Mohammed El-Afifi
+# Copyright 2012, 2014, 2017 Mohammed El-Afifi
 # This file is part of pyofficedom.
 #
 # pyofficedom is free software: you can redistribute it and/or modify
@@ -29,7 +29,7 @@
 #
 # description:  officedom package export file
 #
-# author:       Mohammed Safwat (MS)
+# author:       Mohammed El-Afifi (ME)
 #
 # environment:  ActiveState Komodo IDE, version 6.1.3, build 66534,
 #               windows xp professional
