@@ -38,8 +38,6 @@
 #
 ############################################################
 
-import functools
-
 class LightObject:
 
     """In-memory object
