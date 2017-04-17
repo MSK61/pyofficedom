@@ -25,7 +25,7 @@
 #
 # file:         utils.py
 #
-# function:     word DOM API
+# function:     office DOM helper utilities
 #
 # description:  contains helper utilities for office DOM API
 #
