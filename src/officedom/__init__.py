@@ -40,12 +40,9 @@
 
 import itertools
 import sys
-
 import win32com.client.gencache
 import win32com.client.selecttlb
-
 import word
-
 __all__ = ["word"]
 
 def _init():
